@@ -1,0 +1,8 @@
+### Search books by topic (e.g., "science")
+GET http://localhost:2000/Bazarcom/Search/science
+
+### Get book info by ID (try ID=100 first)
+GET http://localhost:2000/Bazarcom/info/1
+
+### Purchase a book
+POST http://localhost:2000/Bazarcom/purchase/1
