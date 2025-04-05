@@ -10,7 +10,7 @@ app.post('/OrderServer/purchase/:itemNumber', async (req, res) => {
     
     try {
         // 1. Verify item exists and get current stock
-        const catalogResponse = await axios.get('http://localhost:2001/CatalogServer/query', {
+        const catalogResponse = await axios.get('http://catalog:2001/CatalogServer/query', {
             params: { 
                 searchBy: 'id', 
                 idParam: itemNumber,
@@ -32,7 +32,7 @@ app.post('/OrderServer/purchase/:itemNumber', async (req, res) => {
 
         // 3. Update stock in catalog
         const updateResponse = await axios.put(
-            `http://localhost:2001/CatalogServer/updateStock/${itemNumber}`,
+            `http://catalog:2001/CatalogServer/updateStock/${itemNumber}`,
             { quantity: item.quantity - 1 }
         );
 
