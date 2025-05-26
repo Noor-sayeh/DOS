@@ -3,7 +3,23 @@ import axios from 'axios';
 const app = express();
 app.use(express.json());
 
-// Custom logger middleware
+let catalogReplicas = ["http://catalog1:2001", "http://catalog2:2001"];
+let orderReplicas = ["http://order1:2002", "http://order2:2002"];
+let catalogIndex = 0;
+let orderIndex = 0;
+
+function getNextCatalog() {
+    const url = catalogReplicas[catalogIndex];
+    catalogIndex = (catalogIndex + 1) % catalogReplicas.length;
+    return url;
+}
+
+function getNextOrder() {
+    const url = orderReplicas[orderIndex];
+    orderIndex = (orderIndex + 1) % orderReplicas.length;
+    return url;
+}
+
 app.use((req, res, next) => {
     console.log(`[Frontend] ${req.method} ${req.path}`);
     next();
@@ -13,19 +29,17 @@ app.listen(2000, () => {
     console.log(`[Frontend] Service running on port 2000`);
 });
 
-// Search books by topic
 app.get('/Bazarcom/Search/:topic', async (req, res) => {
     try {
         const topicParam = req.params.topic;
-        console.log(`[Frontend] Searching for topic: ${topicParam}`);
-        
         const searchBy = "topic";
         const operation = "search";
-        const response = await axios.get('http://catalog:2001/CatalogServer/query', {
+        const catalogUrl = getNextCatalog();
+
+        const response = await axios.get(`${catalogUrl}/CatalogServer/query`, {
             params: { topicParam, searchBy, operation }
         });
-        
-        console.log(`[Frontend] Search results for ${topicParam}:`, response.data);
+
         res.json(response.data);
     } catch (error) {
         console.error('[Frontend] Error fetching data:', error.message);
@@ -33,19 +47,17 @@ app.get('/Bazarcom/Search/:topic', async (req, res) => {
     }
 });
 
-// Search books by id
 app.get('/Bazarcom/info/:id', async (req, res) => {
     try {
         const idParam = req.params.id;
-        console.log(`[Frontend] Getting info for book ID: ${idParam}`);
-        
         const searchBy = "id";
         const operation = "info";
-        const response = await axios.get('http://catalog:2001/CatalogServer/query', {
+        const catalogUrl = getNextCatalog();
+
+        const response = await axios.get(`${catalogUrl}/CatalogServer/query`, {
             params: { idParam, searchBy, operation }
         });
-        
-        console.log(`[Frontend] Book info for ${idParam}:`, response.data);
+
         res.json(response.data);
     } catch (error) {
         console.error('[Frontend] Error fetching book info:', error.message);
@@ -53,15 +65,13 @@ app.get('/Bazarcom/info/:id', async (req, res) => {
     }
 });
 
-// Make purchase 
 app.post('/Bazarcom/purchase/:id', async (req, res) => {
     try {
         const idParam = req.params.id;
-        console.log(`[Frontend] Attempting purchase for book ID: ${idParam}`);
-        
-        const response = await axios.post(`http://order:2002/OrderServer/purchase/${idParam}`);
-        
-        console.log(`[Frontend] Purchase result for ${idParam}:`, response.data);
+        const orderUrl = getNextOrder();
+
+        const response = await axios.post(`${orderUrl}/OrderServer/purchase/${idParam}`);
+
         res.json(response.data);
     } catch (error) {
         console.error('[Frontend] Error purchasing book:', error.message);
