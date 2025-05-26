@@ -1,22 +1,32 @@
 version: '3.8'  # Update version (or remove it as suggested by warning)
 
 services:
-  catalog:
+  catalog1:
     build:
       context: ./catalog  # Changed to match your folder structure
     ports:
       - "2001:2001"
     networks:
       - bazarcom-network
-
-  order:
+  catalog2:
+    build: ./catalog
+    ports:
+      - "2003:2001"
+    networks:
+      - bazarcom-network
+  order1:
     build:
       context: ./order
     ports:
       - "2002:2002"
     networks:
       - bazarcom-network
-
+  order2:
+    build: ./order
+    ports:
+      - "2004:2002"
+    networks:
+      - bazarcom-network
   frontend:
     build:
       context: ./frontend
@@ -25,8 +35,10 @@ services:
     networks:
       - bazarcom-network
     depends_on:
-      - catalog
-      - order
+      - catalog1
+      - catalog2
+      - order1
+      - order2
 
 networks:
   bazarcom-network:
