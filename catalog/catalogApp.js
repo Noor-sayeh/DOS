@@ -4,8 +4,12 @@ const axios = require('axios');
 const app = express();
 app.use(express.json());
 
-// 👇 رابط replica الثانية (غيريه حسب النسخة)
+//  
 const REPLICA_URL = process.env.REPLICA_URL || 'http://catalog2:2001'; // لو كنتِ catalog1
+
+function getCacheKey(path, params) {
+  return `${path}-${JSON.stringify(params)}`;
+}
 
 // Logger
 app.use((req, res, next) => {
@@ -54,7 +58,7 @@ app.get('/CatalogServer/query', async (req, res) => {
     }
 });
 
-// ✅ Stock update + sync
+//  Stock update + sync
 app.put('/CatalogServer/updateStock/:itemNumber', async (req, res) => {
     try {
         const itemNumber = req.params.itemNumber;
@@ -74,6 +78,10 @@ app.put('/CatalogServer/updateStock/:itemNumber', async (req, res) => {
                     stock: item.stock
                 });
                 console.log(`[Catalog] Synced stock with replica`);
+               const cacheKey = getCacheKey(`/Bazarcom/info/${itemNumber}`, { id: itemNumber });
+                await axios.post('http://frontend:2000/invalidate', {
+    key: cacheKey
+});
             } catch (err) {
                 console.error(`[Catalog] Failed to sync stock with replica:`, err.message);
             }
@@ -91,7 +99,7 @@ app.put('/CatalogServer/updateStock/:itemNumber', async (req, res) => {
     }
 });
 
-// ✅ Item full update + sync
+//  Item full update + sync
 app.put('/CatalogServer/updateItem/:itemNumber', async (req, res) => {
     try {
         const itemNumber = req.params.itemNumber;
@@ -116,13 +124,21 @@ app.put('/CatalogServer/updateItem/:itemNumber', async (req, res) => {
             return res.status(400).json({ error: 'No valid updates provided' });
         }
 
-        // ✨ Sync updated values to replica
+        //  Sync updated values to replica
         try {
             await axios.put(`${REPLICA_URL}/CatalogServer/syncItem/${itemNumber}`, {
                 price: item.cost,
                 stock: item.stock
             });
             console.log(`[Catalog] Synced item update with replica`);
+            const cacheKey = getCacheKey(`/Bazarcom/info/${itemNumber}`, { id: itemNumber });
+            await axios.post('http://frontend:2000/invalidate', {
+    key: cacheKey
+
+    
+});
+
+        
         } catch (err) {
             console.error(`[Catalog] Failed to sync item update:`, err.message);
         }
@@ -144,7 +160,7 @@ app.put('/CatalogServer/updateItem/:itemNumber', async (req, res) => {
     }
 });
 
-// 🟢 Receive stock sync from replica
+
 app.put('/CatalogServer/syncStock/:itemNumber', (req, res) => {
     const itemNumber = req.params.itemNumber;
     const { stock } = req.body;
@@ -157,7 +173,7 @@ app.put('/CatalogServer/syncStock/:itemNumber', (req, res) => {
     res.json({ message: 'Stock synchronized successfully' });
 });
 
-// 🟢 Receive item sync (price + stock)
+
 app.put('/CatalogServer/syncItem/:itemNumber', (req, res) => {
     const itemNumber = req.params.itemNumber;
     const { stock, price } = req.body;
